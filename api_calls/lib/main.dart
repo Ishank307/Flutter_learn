@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:lottie/lottie.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,12 +14,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color.fromARGB(255, 30, 23, 40)),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'API CALLS'),
     );
   }
 }
@@ -31,8 +36,29 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List data = [];
+  List id = [];
+  List rover = [];
   String url =
-      "https://mars.jpl.nasa.gov/msl-raw-images/msss/01000/mcam/1000ML0044631200305217E01_DXXX.jpg";
+      "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&page=2&api_key=xMZrxsMhjwJ0zufDcQq6KpfuDBunWJ3DaChvyiGi";
+  bool isLoaded = false;
+
+  Future getData() async {
+    var response = await http.get(Uri.parse(url));
+    var responseData = json.decode(response.body);
+    var myData = responseData["photos"];
+    int i;
+    debugPrint(myData.toString());
+    for (i = 0; i < myData.length; i++) {
+      data.add(myData[i]["img_src"]);
+      id.add(myData[i]["id"]);
+      rover.add(myData[i]["rover"]["name"]);
+    }
+    setState(() {
+      //isLoaded = true;
+    });
+
+    debugPrint(data.toString());
+  }
 
   int _counter = 0;
 
@@ -43,38 +69,55 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void initState() {
+    getData();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.amber,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: ListView.builder(
+          itemCount: data.length,
+          itemBuilder: (context, index) {
+            return isLoaded
+                ? Column(
+                    children: [
+                      Container(
+                        margin: EdgeInsets.all(10),
+                        width: double.infinity,
+                        // color: Colors.amber,
+                        child: Image.network(data[index]),
+                      ),
+                      TextButton(
+                          onPressed: () {
+                            var sk = SnackBar(
+                              content: Text(rover[index].toString()),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(sk);
+                          },
+                          child: Text("details")),
+                    ],
+                  )
+                : Lottie.network(
+                    "https://lottie.host/9fb2ee60-46a6-46c8-9a83-7655a281c6ff/G8JjHqW9rJ.lottie");
+          }),
     );
+
+    // floatingActionButton:
+    // FloatingActionButton(
+    //   onPressed: _incrementCounter,
+    //   tooltip: 'Increment',
+    //   child: const Icon(Icons.add),
+    // ); // This trailing comma makes auto-formatting nicer for build methods.
   }
 }
